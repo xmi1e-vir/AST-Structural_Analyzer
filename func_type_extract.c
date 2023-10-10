@@ -17,21 +17,25 @@ void remove_spaces(char* str) {
 void func_type(FILE* fp)
 {
     char str[1000] = {0}; // 문자열 받는 곳  
-    const char str_key[5] = "names"; // 키값. 
-  	int cnt = 0;
+    const char str_func[8] = "FuncDecl"; // FuncDecl. 
+    const char str_type[5] = "names"; // names.
+
     
 
-    while (fgets(str, 1000, fp) != NULL)
+    while(fgets(str, 1000, fp) != NULL)
     {   
-        char* name_ptr = strstr(str, str_key); // 함수 이름이 나올때마다 name_ptr에 위치 저장
-        if (name_ptr != NULL) {
-        	cnt++;
-        	fgets(name_ptr,1000,fp); // 다음 줄 읽기.
-        	if(cnt%2 == 1){ //(함수선언 FuncDecl, 타입선언 TypeDecl) 두개 중복 제거. 
-        		remove_spaces(name_ptr); //공백 및 따움표 제거
-            	printf("Type : %s\n",name_ptr);
-            }
-		}
+        char* name_ptr = strstr(str, str_func); //함수 선언이 나올때마다 name_ptr에 위치 저장
+        if (name_ptr != NULL) { 
+        	while(fgets(str,1000,fp) != NULL){
+        		char* type_ptr = strstr(str, str_type); // 함수 리턴값 확인하면 type_ptr에 위치 저장. 
+        		if(type_ptr !=NULL){
+        			fgets(name_ptr,1000,fp); // 다음 줄 읽기.
+        			remove_spaces(name_ptr); //공백 및 따움표 제거
+            			printf("Type : %s\n",name_ptr);
+            			break;
+           		}
+           	}
+	}
     }
     
 }
