@@ -102,15 +102,15 @@ void func_name_extract(FILE* fs)
 void func_type(FILE* fp)
 {
     char str[1000] = {0}; // 문자열 받는 곳  
-    const char str_func[9] = "FuncDecl"; // FuncDecl. 
-    const char str_args[5	]  = "args"; // args.
+    const char str_func[9] = "\"decl\""; // "decl". 
+    const char str_args[5]  = "args"; // args.
     const char str_type[6] = "names"; // names.
 
 	
 	
     while(fgets(str, 1000, fp) != NULL)
     {   
-        char* name_ptr = strstr(str, str_func); //FuncDecl이 나올때마다 name_ptr에 위치 저장
+        char* name_ptr = strstr(str, str_func); //"decl"이 나올때마다 name_ptr에 위치 저장
         if (name_ptr != NULL) {
 			while(fgets(str,1000,fp) != NULL){
 	        	char* args = strstr(str, str_args); //args 위치 확인. 
