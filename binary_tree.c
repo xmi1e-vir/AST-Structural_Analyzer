@@ -1,516 +1,657 @@
 
-typedef struct node {
-	int deepth;
-	unsigned long long num;
-	void * pinfo;
-	struct node * left;
-	struct node * right;
-	struct node * root;
-} Tree;
+#define m 10
 
-Tree * addIt(Tree* nod, unsigned long long number);
-Tree * findIt(Tree * nod, unsigned long long val);
-
-
-
-
-void rebalance_right(Tree *rot_nod, Tree *end_nod)
-{
-	Tree *ini1_nod, *end1_nod;
-	Tree *ini2_nod, *end2_nod;
-	Tree *mid_nod;
-	int cmp, endRight;
-
-	if (end_nod->deepth - rot_nod->deepth == 0)
-	{
-		assert(rot_nod == end_nod);
-		return;
+typedef struct ArvB{ 
+	long int chave[2*m-1];
+	int num_chave; 
+	struct ArvB* filho[2*m];
+	int folha; 
+}ArvB;
+ArvB* RemoveIntermediario(ArvB* pagina, int posicao); 
+ArvB* CriaPagina(int EhFolha){ 
+	ArvB* pag = malloc(sizeof(ArvB)); 
+	pag->num_chave = 0;
+	pag->folha = EhFolha;
+	return pag;
+}
+ArvB* QuebraPagina(ArvB* pagina,int QualFilho, ArvB* filho ){ 
+	ArvB* novo = CriaPagina(filho->folha); 
+	novo->num_chave = m-1; 
+	int i;
+	for(i = 0;i<m-1;i++){
+		novo->chave[i] = filho->chave[i+m];
 	}
-
-	if (end_nod->deepth - rot_nod->deepth == 1)
-	{
-		assert(rot_nod->right == end_nod);
-		return;
+	if(filho->folha == 0){ 
+		for(i=0;i<m;i++){
+			novo->filho[i] = filho->filho[i+m];
+		}
 	}
-
-	if (end_nod->deepth - rot_nod->deepth == 2)
-	{
-		assert(rot_nod->right == end_nod->root);
-		rot_nod->right->deepth = rot_nod->deepth + 1;
-		return;
+	filho->num_chave = m-1;
+	for( i = pagina->num_chave; i >= QualFilho+1; i--){
+		pagina->filho[i+1] = pagina->filho[i];
 	}
-
-	endRight = end_nod->deepth + 1;
-	ini1_nod = rot_nod->right;
-	end2_nod = end_nod;
-
-	int aux = (rot_nod->deepth + end_nod->deepth);
-
-	if (aux % 2 != 0)
-	{
-		aux++;
+	pagina->filho[QualFilho+1] = novo;
+	for(i = pagina->num_chave-1;i >= QualFilho; i--){ 
+		pagina->chave[i+1] = pagina->chave[i];
 	}
-	aux /= 2;
+	pagina->chave[QualFilho] = filho->chave[m-1];
+	pagina->num_chave++; 
+	return pagina;
+}
+ArvB* InsereSecundaria(ArvB* pagina, long int chave){
+	if(pagina->folha == 1){
+		int i = pagina->num_chave-1;
+		while(i>=0 && pagina->chave[i] > chave){ 
+			pagina->chave[i+1] = pagina->chave[i];
+			i--;
+		}
+		pagina->chave[i+1] = chave;
+		pagina->num_chave++;
+		return pagina;
+	}
+	else{ 
+		int i = pagina->num_chave-1;
+		while(i >= 0 && pagina->chave[i] > chave){
+			i--;
+		}
+		if(pagina->filho[i+1]->num_chave == 2*m-1){
+			pagina = QuebraPagina(pagina,i+1,pagina->filho[i+1]);
+			if(pagina->chave[i+1]<chave){
+				i++;
+			}
+		}
+		pagina->filho[i+1] = InsereSecundaria(pagina->filho[i+1],chave);
+		return pagina;
+	}
+}
+ArvB* Insere(ArvB* pagina,long int chave){
+	if(pagina == NULL){
+		ArvB* raiz = CriaPagina(1);
+		raiz->chave[0] = chave;
+		raiz->num_chave = 1; 
+		return raiz;
+	}
+	else{
+		if(pagina->num_chave == 2*m-1){ 
+			ArvB* NovaRaiz = CriaPagina(0);
+			NovaRaiz->filho[0] = pagina;
+			NovaRaiz = QuebraPagina(NovaRaiz,0,pagina);
+			int i = 0;
+			if(NovaRaiz->chave[0]<chave){ 
+				i++;
+			}
+			NovaRaiz->filho[i] = InsereSecundaria(NovaRaiz->filho[i],chave); 
+			return NovaRaiz;
+		}
+		else{
+			pagina = InsereSecundaria(pagina,chave); 
+			return pagina;
+		}
+	}
+}
+ArvB* RemoveFolha(ArvB* pagina, int posicao){
+	int i;
+	for(i=posicao+1;i<pagina->num_chave;i++){
+		pagina->chave[i-1]= pagina->chave[i];
+	}
+	pagina->num_chave--; 
+	return pagina;
+}
+long int MaiorDosMenores(ArvB* pagina, int posicao){
+	ArvB* caminhador = pagina->filho[posicao]; 
+	while(caminhador->folha==0){
+		caminhador = caminhador->filho[caminhador->num_chave];
+	}
+	int i = caminhador->num_chave;
+	long int MDM = caminhador->chave[i-1];
+	return MDM;
+}
+long int MenorDosMaiores(ArvB* pagina, int posicao){
+	ArvB* caminhador = pagina->filho[posicao+1];
+	while(caminhador->folha==0){
+		caminhador = caminhador->filho[0];
+	}
+	long int MDM = caminhador->chave[0]; 
+	return MDM;
+}
+ArvB* PegaFilhoRicoEsquerdo(ArvB* pagina,int posicao){ 
+	ArvB* irmaorico = pagina->filho[posicao-1];
+	ArvB* filhopobre = pagina->filho[posicao]; 
+	int i;
+	for(i=(filhopobre->num_chave)-1;i>=0;i--){ 
+		filhopobre->chave[i+1] = filhopobre->chave[i];
+	}
+	if(filhopobre->folha==0){ 
+		for(i=filhopobre->num_chave;i>=0;i--){
+			filhopobre->filho[i+1] = filhopobre->filho[i]; 
+		}
+	}
+	filhopobre->chave[0] = pagina->chave[posicao-1];
+	filhopobre->num_chave++;
+	if(filhopobre->folha == 0){  
+		filhopobre->filho[0] = irmaorico->filho[irmaorico->num_chave];
+	}
+	pagina->chave[posicao-1] = irmaorico->chave[irmaorico->num_chave-1]; 
+	irmaorico->num_chave--;
+	return pagina;
+}
+ArvB* PegaFilhoRicoDireito(ArvB* pagina,int posicao){
+	ArvB* irmaorico = pagina->filho[posicao+1];
+	ArvB* filhopobre = pagina->filho[posicao];
+	filhopobre->chave[filhopobre->num_chave] = pagina->chave[posicao];
+	if(filhopobre->folha == 0){
+		filhopobre->filho[(filhopobre->num_chave)+1] = irmaorico->filho[0];
+	}
+	pagina->chave[posicao] = irmaorico->chave[0];
+	int i;
+	for(i=1;i<irmaorico->num_chave;i++){
+		irmaorico->chave[i-1] = irmaorico->chave[i];
+	}
+	if(irmaorico->folha==0){
+		for(i=1;i<=irmaorico->num_chave;i++){
+			irmaorico->filho[i-1]=irmaorico->filho[i];
+		}
+	}
+	filhopobre->num_chave += 1;
+	irmaorico->num_chave -= 1;
+	return pagina;
+}
+ArvB* Concatena(ArvB* pagina, int posicao){
+	ArvB* irmao = pagina->filho[posicao+1];
+	ArvB* filhoB = pagina->filho[posicao]; 
+	filhoB->chave[m-1]= pagina->chave[posicao];
+	int i;
+	for (i=0;i<irmao->num_chave;i++){
+		filhoB->chave[i+m] = irmao->chave[i];
+	}
+	if(filhoB->folha==0){ 
+		for(i=0;i<irmao->num_chave;i++){
+			filhoB->filho[i+m] = irmao->filho[i];
+		}
+	}
+	for(i=posicao+1;i<pagina->num_chave;i++){ 
+		pagina->chave[i-1]= pagina->chave[i];
+	}
+	for(i=posicao+2;i<=pagina->num_chave;i++){
+		pagina->filho[i-1] = pagina->filho[i];
+	}
+	filhoB->num_chave += (irmao->num_chave)+1;
+	pagina->num_chave--; 
+	free(irmao); 
+	return pagina;
+}
+ArvB* Rotacao(ArvB* pagina,int posicao){ 
+	if(posicao!=0 && pagina->filho[posicao-1]->num_chave >= m){
+        pagina = PegaFilhoRicoEsquerdo(pagina,posicao);
+        return pagina;
+	}
+	else if(posicao!=pagina->num_chave && pagina->filho[posicao+1]->num_chave >= m){ 
+		pagina = PegaFilhoRicoDireito(pagina,posicao);
+		return pagina;
+	}
+	else{ 
+		if(posicao!=pagina->num_chave){ 
+			pagina = Concatena(pagina,posicao);
+		}
+		else{
+			pagina = Concatena(pagina,posicao-1);
+		}
+		return pagina;
+	}
+}
+
+ArvB* RemoveGeral(ArvB* pagina, long int chave){
+	int i=0;
+	while(i<pagina->num_chave && pagina->chave[i]<chave){
+		i++;
+	}
+	if(i<pagina->num_chave && pagina->chave[i]==chave){ 
+		if(pagina->folha == 1){
+			pagina = RemoveFolha(pagina,i);
+		}
+		else{ 
+            pagina = RemoveIntermediario(pagina,i);
+		}
+	}
+	else{
+		if(pagina->folha == 1){
+			return pagina;
+		}
+		int flag = 0;
+		if(i == pagina->num_chave){
+			flag = 1;
+		}
+		if(pagina->filho[i]->num_chave < m){ 
+			pagina = Rotacao(pagina,i);
+		}
+		if(flag == 1 && i > pagina->num_chave){
+			pagina->filho[i-1] = RemoveGeral(pagina->filho[i-1],chave); 
+		}
+		else{
+			pagina->filho[i] = RemoveGeral(pagina->filho[i],chave);
+		}
+	}
+	return pagina;
+}
+ArvB* RemoveIntermediario(ArvB* pagina, int posicao){
+	int i = pagina->chave[posicao];
+	if(pagina->filho[posicao]->num_chave >m-1){ 
+		long int MDM = MaiorDosMenores(pagina,posicao);
+		pagina->chave[posicao] = MDM;
+		pagina->filho[posicao] = RemoveGeral(pagina->filho[posicao],MDM);
+	}
+	else if(pagina->filho[posicao+1]->num_chave > m-1){ 
+		long int MDM = MenorDosMaiores(pagina,posicao);
+		pagina->chave[posicao] = MDM;
+		pagina->filho[posicao+1] = RemoveGeral(pagina->filho[posicao+1],MDM);
+	}
+	else{ 
+		pagina = Concatena(pagina,posicao);
+		pagina->filho[posicao] = RemoveGeral(pagina->filho[posicao],i);
+	}
+	return pagina;
+}
+ArvB* RemoveRaiz(ArvB* raiz, long int chave){
+	if(raiz == NULL){ 
+		printf("arvore vazia\n");
+		return raiz;
+	}
+	raiz = RemoveGeral(raiz,chave); 
+	if(raiz->num_chave == 0){ 
+		ArvB* pagina = raiz;
+		if(raiz->folha == 1){ 
+			raiz = NULL;
+		}
+		else{ 
+			raiz = raiz->filho[0];
+		}
+		free(pagina); 
+	}
+	return raiz;
+}
+void PrintaTudo(ArvB* pagina){ 
+	int i;
+	if(pagina!=NULL){
+        for(i=0;i<pagina->num_chave;i++){
+            if(pagina->folha==0){
+                PrintaTudo(pagina->filho[i]);
+            }
+            printf("%ld\n",pagina->chave[i]);
+        }
+        if(pagina->folha==0){
+            PrintaTudo(pagina->filho[i]);
+        }
+    }
+}
+
+ArvB* VerificaInsere(ArvB* Antigo,ArvB* pagina,long int chave){ 
+	int p=0; 
+	if(pagina!=NULL){ 
+	for(p=0;p<pagina->num_chave;p++){ 
+		if(pagina->folha==0){ 
+			Antigo = VerificaInsere(Antigo,pagina->filho[p],chave);
+		}
+		if((pagina->chave[p] - pagina->chave[p]%10000000) <= (chave - chave%10000000)){ 
+			if(pagina->chave[p]%100 < chave%100){  
+				Antigo = Insere(Antigo,pagina->chave[p]); 
+			}
+		}
+	}
+	if(pagina->folha==0){ 
+		Antigo = VerificaInsere(Antigo,pagina->filho[p],chave);
+		}
+	}
+	return Antigo; 
+}
+ArvB* VerificaRemove(ArvB* raiz,ArvB* pagina,long int chave){
+	int p=0;
+	if(pagina!=NULL){
+        while(p<pagina->num_chave){
+            if(pagina->folha==0){
+            raiz = VerificaRemove(raiz,pagina->filho[p],chave);
+            }
+            if((pagina->chave[p] - pagina->chave[p]%10000000) <= (chave - chave%10000000)){
+                if(pagina->chave[p]%100 < chave%100){
+                    raiz = RemoveRaiz(raiz,pagina->chave[p]);
+                    p--; 
+                }
+            }
+            p++;
+        }
+            if(pagina->folha==0){
+                raiz = VerificaRemove(raiz,pagina->filho[p],chave);
+        }
+	}
+	return raiz; 
+}
+int Busca01(ArvB* pagina,long int chave){
+	int i = 0;
+	int j = 0;
+	if(pagina!=NULL){
+        for(i=0;i<pagina->num_chave;i++){
+            if(pagina->folha==0){
+                j+= Busca01(pagina->filho[i],chave); 
+            }
+            if(pagina->chave[i] - pagina->chave[i]%10000000 == chave - chave%10000000){ 
+                if(pagina->chave[i]%100 == chave%100){ 
+                    return 1;
+
+                }
+            }
+    	}
+    	if(pagina->folha==0){
+            j+= Busca01(pagina->filho[i],chave); 
+        }
+	}
 	
-	mid_nod = rot_nod;
-	cmp = rot_nod->deepth;
-
-	while (cmp != aux)
-	{
-		mid_nod = mid_nod->right;
-		cmp++;
-		endRight--;
-	}
-
-	end1_nod = mid_nod->root;
-	ini2_nod = mid_nod->right;
-	end1_nod->right = NULL;
-
-	rot_nod->right = mid_nod;
-	mid_nod->root = rot_nod;
-	mid_nod->left = ini1_nod;
-	mid_nod->right = ini2_nod;
-	ini1_nod->root = mid_nod;
-	ini2_nod->root = mid_nod;
-
-
-	mid_nod->deepth = rot_nod->deepth + 1;
-	ini1_nod->deepth = mid_nod->deepth + 1;
-	ini2_nod->deepth = mid_nod->deepth + 1;
-
-	aux = cmp - rot_nod->deepth;
-
-	end1_nod->deepth = rot_nod->deepth + aux;
-	rebalance_right(ini1_nod, end1_nod);
-
-	end2_nod->deepth = endRight;
-	rebalance_right(ini2_nod, end2_nod);
+		return j;
 
 }
-
-
-Tree *addIt(Tree *nod, unsigned long long number)
-{
-	int deep_level = 0;
-	int left_bal = 0;
-	int right_bal = 0;
-	Tree* middle = nod;
-	Tree* nod_bal_right = NULL;
-	Tree* nod_bal_left = NULL;
-
-
-	if (nod == NULL) {
-		nod = (Tree*)malloc(sizeof(Tree));
-		if (nod == NULL) {
-			return NULL;
-		}
-		nod->deepth = 0;
-		nod->num = number;
-		nod->left = NULL;
-		nod->root = NULL;
-		nod->right = NULL;
-		nod->pinfo = NULL; 
-		return nod;
+int BuscaElemento(ArvB* pagina,long int chave,int ano ){ 
+	int i = 0;
+	int caminhador = 0; 
+	if(pagina!=NULL){ 
+        for(i=0;i<pagina->num_chave;i++){ 
+            if(pagina->folha==0){
+                caminhador+= BuscaElemento(pagina->filho[i],chave,ano); 
+            }
+            if(pagina->chave[i] - pagina->chave[i]%10000000 == chave*10000000){ 
+                if(pagina->chave[i]%100 == ano){ 
+                    return (pagina->chave[i]%10000000 - pagina->chave[i]%100)/100;
+                }
+            }
+        }
+        if(pagina->folha==0){
+            caminhador+= BuscaElemento(pagina->filho[i],chave,ano);
+        }
 	}
+	return caminhador;
+}
+ArvB* Incrementa(ArvB* pagina,long int chave){ 
+	int i = 0;
+	while(i<pagina->num_chave && chave - chave%10000000 > pagina->chave[i] - pagina->chave[i]%10000000){
+		i++;
+	}
+	if(pagina->chave[i] - pagina->chave[i]%10000000 == chave - chave%10000000){
+        if(pagina->chave[i]%100 == chave%100){
+            pagina->chave[i] += (chave%10000000 - chave%100); 
+            return pagina; 
+        }
+	}
+	else if (pagina->folha != 1){
+		pagina->filho[i] = Incrementa(pagina->filho[i],chave);
+	}
+	else{
+		return pagina;
+	}
+}
+ArvB* InsereVista(ArvB* atual,long int chave){
 
-	while (middle != NULL)
-	{
-		if (number > middle->num)
-		{
-			left_bal = 0;
-			
-			if (middle->left == NULL)
-			{
-				if ((right_bal == 0) && (middle != nod))
-				{
-					nod_bal_right = middle;
-					right_bal = 1;
-				}
-				else
-				{
-					right_bal++;
-				}
+    int flag = 0; 
+    atual = VerificaRemove(atual,atual,chave);
+    flag = Busca01(atual,chave); 
+    if(flag == 0){ 
+        atual = Insere(atual,chave); 
+    }
+    else{ 
+        atual = Incrementa(atual,chave);
+    }
+
+    return atual; 
+}
+long int VerificaParcela(ArvB* antiga,long int chave, int parcela){ 
+    long int Parcelado = ((chave%10000000 - chave%100)/100)/parcela; 
+	int ano = chave%100; 
+	long int chaveParcelada = (chave - chave%10000000) + (Parcelado*100) + ano; 
+	int i ; 
+	int mes = (chave%1000000000 - chave%10000000)/10000000; 
+	for(i=1;i<parcela;i++){
+		if(i+mes > 12){ 
+			chaveParcelada = chaveParcelada - 110000000; 
+			chaveParcelada++; 
+			mes = 1; 
+		}
+		else{
+            chaveParcelada = chaveParcelada+10000000; 
+
+		}
+	}
+	return chaveParcelada; 
+}
+ArvB* InsereParcelado(ArvB* atual,long int chave, int parcela){
+	long int Parcelado = ((chave%10000000 - chave%100)/100)/parcela;
+	int ano = chave%100; 
+	long int chaveParcelada = (chave - chave%10000000) + (Parcelado*100) + ano;
+	int i ;
+	int mes = (chave%1000000000 - chave%10000000)/10000000; 
+	atual = InsereVista(atual,chaveParcelada); 
+	for(i=1;i<parcela;i++){
+		if(i+mes > 12){
+			chaveParcelada = chaveParcelada - 110000000;
+			chaveParcelada++; 
+			mes = 1; 
+			atual = InsereVista(atual,chaveParcelada ); 
+		}
+		else{ 
+            chaveParcelada = chaveParcelada+10000000;
+			atual = InsereVista(atual,chaveParcelada); 
+		}
+	}
+	return atual; 
+}
+int BuscaMes(ArvB* pagina,int mes,int ano){
+	long int chave = mes + 100; 
+	int i;
+	int soma = 0; 
+	for(i=0;i<30;i++){
+		soma+= BuscaElemento(pagina,chave,ano); 
+		chave+= 100; 
+	}
+	return soma; 
+}
+int BuscaPeriodo(ArvB* pagina, long int chave,int dias,int ano){ 
+	int i;
+	int soma = 0; 
+	for(i=0;i<dias;i++){
+		if(chave - chave%100 > 3000){ 
+			chave++;
+			if(chave%100>12){
+				ano++; 
+				chave = chave - 12; 
 			}
-			else
-			{
-				right_bal = 0;
-			}
-
-
-			if (middle->right == NULL)
-			{
-				
-				Tree *right = addIt(NULL, number); 
-				right->root = middle;
-				middle->right = right;
-				right->deepth = deep_level + 1;
-
-				if (right_bal >= MAX_RECURSIVE) 
-				{
-					rebalance_right(nod_bal_right, right);
-				}
-
-		
-
-				return right;
-			}
-
-			
-			middle = middle->right;
-			deep_level++;
+			chave = chave - 3000;
 		}
-		else if (number < middle->num)
-		{
-		
-			left_bal = 0;
-			right_bal = 0;
-			if (middle->left == NULL)
-			{
-				
-				Tree *left = addIt(NULL, number);
-				
-				middle->left = left;
-				left->root = middle;
-				left->deepth = deep_level + 1;
-
-				return left;
-			}
-
-		
-			middle = middle->left;
-			deep_level++;
-		}
-		else
-		{
-			return middle;
-		}
+		soma+= BuscaElemento(pagina,chave,ano);
+		chave+=100;
 	}
-
-	
-	assert(1 == 0);
-
-	return NULL;
+	return soma;
 }
-
-Tree *findIt(Tree *where, unsigned long long val)
-{
-	if (where == NULL)
-	{
-		return NULL;
-	}
-
-	if (where->num == val)
-	{
-		return where;
-	}
-
-	while (where != NULL)
-	{
-		if (val > where->num)
-		{
-			where = where->right;
-		}
-		else if (val < where->num)
-		{
-			where = where->left;
-		}
-		else
-		{
-			return where;
-		}
-	}
-
-	return NULL;
-}
-
-void actInOrder(Tree *nod, void action(Tree *))
-{
-	Tree *aux = nod;
-
-	if (nod == NULL)
-	{
-		return;
-	}
-
-	maxOnLeft:
-	{
-		while (nod->left != NULL)
-		{
-			nod = nod->left;
-		}
-		
-		action(nod);			
-
-		if (nod->right != NULL)
-		{
-			nod = nod->right;
-			goto maxOnLeft;
-		}
-
-		while (nod->root != NULL)
-		{
-			aux = nod->root;
-
-			if (aux->root == NULL)
-			{
-				return;     
-			}
-
-			if (aux->left == nod) 
-			{
-				action(aux);
-				if (aux->right != NULL) 
-				{
-					nod = aux->right;
-					goto maxOnLeft;
-				}
-
-			}
-			nod = aux;
-		}
-		return;               
-
-	}
-}
-
-
-void freeAllTree(Tree *root, void freeMe(Tree *))
-{
-	Tree *aux;
-	Tree *nod = root;
-
-	if (nod == NULL)
-	{
-		return;
-	}
-
-
-	run_max_on_left:
-	{
-		while (nod->left != NULL)
-		{
-			nod = nod->left;
-		}
-
-		if (nod->right != NULL)
-		{
-			nod = nod->right;
-			goto run_max_on_left;
-		}
-
-		while (nod->root != NULL)
-		{
-			aux = nod->root;
-			if (aux->left == nod)
-			{
-				freeMe(aux->left);
-				aux->left = NULL;
-				if (aux->right != NULL)
-				{
-					nod = aux->right;
-					goto run_max_on_left;
-				}
-			}
-			else if (aux->right == nod)
-			{
-				assert(aux->left == NULL);
-				freeMe(aux->right);
-				aux->right = NULL;
-			}
-			else
-			{
-				assert(0);
-			}
-			nod = aux;
-		}
-		if (nod == root)
-		{
-			freeMe(root);
-			return;
-		}
-
-	}
-}
-
-
-int counter = 0;
-
-void freeMeImplementation(Tree *t)
-{
-	if (t != NULL)
-	{
-		if (t->pinfo != NULL)
-		{
-			free(t->pinfo);
-		}
-		free(t);
-	}
-	counter--;
-}
-
-void printImplementation(Tree *t)
-{
-	printf(" %.2lld", t->num);
-}
-
-void printInDeepthImplementation(Tree *t)
-{
-	for (int i = 0; i < t->deepth; i++)
-	{
-		printf("    .");
-	}
-	printf(" %.2lld\n", t->num);
-}
-
-
-
-void counterImplementation(Tree *t)
-{
-	counter++;
-}
-
-void printRandomic(void)
-{
-	for (int i = 0; i < 1; i++)
-	{
-		Tree* root = NULL;
-		int length = (MAX_RECURSIVE + 1) * 2;
-		int val = length;
-
-		root = addIt(NULL, val);
-		printf("\nValues:  %.2d", val);
-
-		for (int i = 0; i < length; i++)
-		{
-
-			val = 2 * i + 1;
-			addIt(root, val);
-			printf(" %.2d", val);
-		}
-
-		printf("\nInOrder:");
-		actInOrder(root->left, printImplementation);
-		printImplementation(root);
-		actInOrder(root->right, printImplementation);
-
-		counter = 1;
-		actInOrder(root->left, counterImplementation);
-		actInOrder(root->right, counterImplementation);
-		printf("\nTotal of nodes is : %d ", counter);
-
-		printf("\n================================== Print In Deepth =======================================");
-		printf("\n012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789\n");
-		actInOrder(root->left, printInDeepthImplementation);
-		printInDeepthImplementation(root);
-		actInOrder(root->right, printInDeepthImplementation);
-
-
-		freeAllTree(root, freeMeImplementation);
-		printf("\nNumber of nodes after free : %d ", counter);
-
-		assert(counter == 0);
-	}
-}
-
-int oddNumbers[MAX_SIZE_TREE / 2];
-int odd_len = MAX_SIZE_TREE / 2;
-
-void print_lins(int factor)
-{
-	char oddLeaf[MAX_SIZE_TREE+1];
-	char evenLeaf[MAX_SIZE_TREE + 1];
-	
-	char fmt[] = "                                                                                                                                            ";
-
-	int x = factor*4;
-	assert((x+4) < sizeof(fmt));
-
-	fmt[x+2] = 0;
-	x = (x / 2) - 1;
-	fmt[x++] = '%';
-	fmt[x++] = '.';
-	fmt[x++] = '2';
-	fmt[x++] = 'd';
-
-	for (int i = 0; i < odd_len/factor; i++)
-	{
-		printf(fmt, factor * oddNumbers[i]);
-	}
-	printf("\n");
-
-	if (odd_len == factor)
-	{
-		return;
-	}
-
-	
-	for (int i = 0; i < (4*factor); i++) 
-	{
-		if (i < (2 * factor)) {
-			if (i == (2 * factor - 1)) {
-				oddLeaf[i] = '/';
-			} else {
-				oddLeaf[i] = '_';
-			}
-			evenLeaf[i] = ' ';
-		}
-		else 
-		{
-			oddLeaf[i] = ' ';
-			if (i == (2 * factor)) {
-				evenLeaf[i] = '\\';
-			} else {
-				evenLeaf[i] = '_';
-			}
-		}
-	}
-	evenLeaf[(4 * factor)] = 0;
-	oddLeaf[(4 * factor)] = 0;
-
-
-
-	for (int i = 0; i < odd_len / factor; i++)
-	{
-		if (i % 2)
-		{
-			printf("%s", oddLeaf);
-		}
-		else
-		{
-			printf("%s", evenLeaf);
-		}
-	}
-	printf("\n");
-
-}
-
-void print_staticaly()
-{
-	system("cls");
-
-
-	for (int i = 0; i < odd_len; i++)
-	{
-		oddNumbers[i] = 2 * i + 1;
-	}
-
-	int bit = 1;
-
-	while (bit < MAX_SIZE_TREE)
-	{
-		print_lins(bit);
-		bit = bit << 1;
-	}
-
-
-	printf("\n");
-
-}
-
-int main(int argc, char ** argv)
-{
-	print_staticaly();
-	printRandomic();
-
-	return (EXIT_SUCCESS);
+int main(){ 
+   
+	ArvB *antigaP;
+	ArvB *atualP; 
+	ArvB *antigaR;
+	ArvB *atualR; 
+	antigaR = NULL;
+	atualR = NULL;
+	antigaP = NULL;
+	atualP = NULL;
+	long int ultimaParcela;
+	long int chave;
+	int i;
+	int OP;
+	int OP2;
+	int OP3;
+	int OP4;
+	while(OP!=5){ 
+        printf("DIGITE A OPERACAO DESEJADA\n");
+        printf("1)PAGAMENTO\n");
+        printf("2)RECEBIMENTO\n");
+        printf("3)CONSULTA ANO ATUAL\n");
+        printf("4)CONSULTA ANOS ANTERIORES\n");
+        printf("5)FINALIZAR OPERACOES\n");
+        scanf("%d",&OP);
+        if(OP == 1){
+            printf("1)PARCELADO\n");
+            printf("2)A VISTA\n");
+            scanf("%d",&OP2);
+            if(OP2 == 1){
+                printf("ESCOLHA A PARCELA, ATE 6 PARCELAS\n");
+                scanf("%d",&OP2);
+					 while(OP2<1 || OP2>6){
+						 printf("Escolha um numero entre 1 e 6\n");
+						 scanf("%d",&OP2);
+					 }
+                printf("INSIRA DIA MES 5 DIGITOS DE PAGAMENTO E ANO NO MESMO NUMERO, EXEMPLO: 1010000100\n");
+                scanf("%ld",&chave);
+                ultimaParcela = VerificaParcela(antigaP,chave,OP2);
+					 antigaP = VerificaInsere(antigaP,atualP,ultimaParcela);
+                atualP = InsereParcelado(atualP,chave,OP2);
+            }
+            else if(OP2 == 2){
+                printf("INSIRA MES ANO 5 DIGITOS DE PAGAMENTO E ANO NO MESMO NUMERO, EXEMPLO: 1010000100\n");
+                scanf("%ld",&chave);
+                antigaP = VerificaInsere(antigaP,atualP,chave);
+                atualP = InsereVista(atualP,chave);
+            }
+        }
+        else if(OP == 2){
+            printf("1)PARCELADO\n");
+            printf("2)A VISTA\n ");
+            scanf("%d",&OP2);
+            if(OP2 == 1){
+                printf("ESCOLHA A PARCELA, ATE 6 PARCELAS\n");
+                scanf("%d",&OP2);
+					while(OP2<1 || OP2>6){
+						 printf("Escolha um numero entre 1 e 6\n");
+						 scanf("%d",&OP2);
+					 }
+                printf("INSIRA DIA MES 5 DIGITOS DE PAGAMENTO E ANO NO MESMO NUMERO, EXEMPLO: 1010000100\n");
+                scanf("%ld",&chave);
+                ultimaParcela = VerificaParcela(antigaR,chave,OP2);
+					 antigaR = VerificaInsere(antigaR,atualR,ultimaParcela);
+                atualR = InsereParcelado(atualR,chave,OP2);
+            }
+            else if(OP2 == 2){
+                printf("INSIRA MES ANO 5 DIGITOS DE PAGAMENTO E ANO NO MESMO NUMERO, EXEMPLO: 1010000100\n");
+                scanf("%ld",&chave);
+                antigaR = VerificaInsere(antigaR,atualR,chave);
+                atualR = InsereVista(atualR,chave);
+            }
+        }
+        else if(OP == 3){
+            printf("1) DIA\n");
+            printf("2) MES\n");
+            printf("3) PERIODO\n");
+            scanf("%d",&OP2);
+            if(OP2 == 1){
+                printf("INSIRA O DIA E MES DESEJADO EXEMPLO: 2104 \n");
+                scanf("%d",&OP2);
+					while(OP2<101 || (OP2-OP2%100) > 3000 || OP2%100 > 12){
+						printf("Dia e Mes Invalido, por favor digite um numero valido\n");
+						scanf("%d",&OP2);
+					}
+                printf("INSIRA O ANO\n");
+                scanf("%d",&OP3);
+					 while(OP3<0 || OP3>99){
+						printf("Por favor digite um ano entre 0 e 99\n");
+						scanf("%d",&OP3);
+					}
+                printf("RECEBEU: %d PAGOU: %d SALDO: %d\n",BuscaElemento(atualR,OP2,OP3),BuscaElemento(atualP,OP2,OP3),(BuscaElemento(atualR,OP2,OP3)-BuscaElemento(atualP,OP2,OP3)));
+            }
+            else if(OP2 == 2){
+                printf("INSIRA O MES DESEJADO\n");
+                scanf("%d",&OP2);
+					 while(OP2<1 || OP2 > 12){
+						 printf("Digite um mes entre 1 e 12\n");
+						 scanf("%d",&OP2);
+					 }
+                printf("INSIRA O ANO\n");
+                scanf("%d",&OP3);
+					 while(OP3<0 || OP3>99){
+						printf("Por favor digite um ano entre 0 e 99\n");
+						scanf("%d",&OP3);
+					}
+                printf("RECEBEU: %d PAGOU: %d SALDO: %d\n",BuscaMes(atualR,OP2,OP3),BuscaMes(atualP,OP2,OP3),(BuscaMes(atualR,OP2,OP3)-BuscaMes(atualP,OP2,OP3)));
+            }
+            else if(OP2 == 3){
+                printf("INSIRA A DATA INICIAL PARA BUSCAR EXEMPLO : 2607\n");
+                scanf("%d",&OP2);
+					 while(OP2<101 || (OP2-OP2%100) > 3000 || OP2%100 > 12){
+						printf("Dia e Mes Invalido, por favor digite um numero valido\n");
+						scanf("%d",&OP2);
+					}
+                printf("INSIRA O ANO\n");
+                scanf("%d",&OP3);
+					 while(OP3<0 || OP3>99){
+						printf("Por favor digite um ano entre 0 e 99\n");
+						scanf("%d",&OP3);
+					}
+                printf("INSIRA O PERIODO EM DIAS QUE GOSTARIA DE BUSCAR\n");
+                scanf("%d",&OP4);
+					 while(OP4<1){
+					 	printf("Digite um periodo maior que 0\n");
+						scanf("%d",&OP4);
+					 }
+                printf("RECEBEU: %d PAGOU: %d SALDO: %d\n",BuscaPeriodo(atualR,OP2,OP4,OP3),BuscaPeriodo(atualP,OP2,OP4,OP3),BuscaPeriodo(atualR,OP2,OP4,OP3)-BuscaPeriodo(atualP,OP2,OP4,OP3));
+            }
+        }
+        else if(OP == 4){
+            printf("1) DIA\n");
+            printf("2) MES\n");
+            printf("3) PERIODO\n");
+            scanf("%d",&OP2);
+            if(OP2 == 1){
+                printf("INSIRA O DIA E MES DESEJADO EXEMPLO: 2104 \n");
+                scanf("%d",&OP2);
+					 while(OP2<101 || (OP2-OP2%100) > 3000 || OP2%100 > 12){
+						printf("Dia e Mes Invalido, por favor digite um numero valido\n");
+						scanf("%d",&OP2);
+					}
+                printf("INSIRA O ANO DESEJADO\n");
+                scanf("%d",&OP3);
+					 while(OP3<0 || OP3>99){
+						printf("Por favor digite um ano entre 0 e 99\n");
+						scanf("%d",&OP3);
+					}
+                printf("RECEBEU: %d PAGOU: %d SALDO: %d\n",BuscaElemento(antigaR,OP2,OP3),BuscaElemento(antigaP,OP2,OP3),(BuscaElemento(antigaR,OP2,OP3)-BuscaElemento(antigaP,OP2,OP3)));
+            }
+            else if(OP2 == 2){
+                printf("INSIRA O MES DESEJADO\n");
+                scanf("%d",&OP2);
+					while(OP2<1 || OP2 > 12){
+						 printf("Digite um mes entre 1 e 12\n");
+						 scanf("%d",&OP2);
+					 }
+                printf("INSIRA O ANO DESEJADO\n");
+                scanf("%d",&OP3);
+					 while(OP3<0 || OP3>99){
+						printf("Por favor digite um ano entre 0 e 99\n");
+						scanf("%d",&OP3);
+					}
+                printf("RECEBEU: %d PAGOU: %d SALDO: %d\n",BuscaMes(antigaR,OP2,OP3),BuscaMes(antigaP,OP2,OP3),(BuscaMes(antigaR,OP2,OP3)-BuscaMes(antigaP,OP2,OP3)));
+            }
+            else if(OP2 == 3){
+                printf("INSIRA A DATA INICIAL PARA BUSCAR EXEMPLO : 2607\n");
+                scanf("%d",&OP2);
+					while(OP2<101 || (OP2-OP2%100) > 3000 || OP2%100 > 12){
+						printf("Dia e Mes Invalido, por favor digite um numero valido\n");
+						scanf("%d",&OP2);
+					}
+                printf("INSIRA O ANO DESEJADO\n");
+                scanf("%d",&OP3);
+					 while(OP3<0 || OP3>99){
+						printf("Por favor digite um ano entre 0 e 99\n");
+						scanf("%d",&OP3);
+					}
+                printf("INSIRA O PERIODO EM DIAS QUE GOSTARIA DE BUSCAR\n");
+                scanf("%d",&OP4);
+					 while(OP4<1){
+					 	printf("Digite um periodo maior que 0\n");
+						scanf("%d",&OP4);
+					 }
+                printf("RECEBEU: %d PAGOU: %d SALDO: %d\n",BuscaPeriodo(antigaR,OP2,OP4,OP3),BuscaPeriodo(antigaP,OP2,OP4,OP3),BuscaPeriodo(antigaR,OP2,OP4,OP3)-BuscaPeriodo(antigaP,OP2,OP4,OP3));
+            }
+        }
+    }
 }
