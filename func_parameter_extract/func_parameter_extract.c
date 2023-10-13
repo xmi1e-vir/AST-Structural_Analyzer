@@ -50,7 +50,7 @@ void parameter_parser(FILE* fs) {
     if (cJSON_IsArray(ext)) {
         int array_size = cJSON_GetArraySize(ext);
 
-        // Parameter 정보를 담은 노드를 찾아가는 과정
+        // Parameter 정보를 담은 배열을 찾아가는 과정
         for (int i = 0; i < array_size; i++) {
             cJSON* func_def = cJSON_GetArrayItem(ext, i);
             cJSON* decl = cJSON_GetObjectItem(func_def, "decl");
@@ -59,7 +59,7 @@ void parameter_parser(FILE* fs) {
             cJSON* args = cJSON_GetObjectItem(type, "args");
             cJSON* param_list = cJSON_GetObjectItem(args, "params");
 
-            // Parameter 정보를 담은 노드(배열)를 찾으면 다시 순회하며 이름과 타입을 담은 노드를 찾아냄
+            // Parameter 정보를 담은 배열 내부를 다시 순회하며 이름과 타입을 담은 객체를 찾아냄
             if (cJSON_IsArray(param_list)) {
                 int param_size = cJSON_GetArraySize(param_list);
 
