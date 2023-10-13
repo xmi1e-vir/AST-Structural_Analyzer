@@ -203,6 +203,7 @@ int count_functions(json_t *root)
 // 정다은
 void parameter_parser(FILE* fs)
 {
+    // 파일을 읽어오는 과정
     fseek(fs, 0, SEEK_END);
     int size = ftell(fs);
     fseek(fs, 0, SEEK_SET);
@@ -227,7 +228,7 @@ void parameter_parser(FILE* fs)
     {
         int array_size = cJSON_GetArraySize(ext);
 
-        // Parameter 정보를 담은 노드를 찾아가는 과정
+        // Parameter 정보를 담은 배열을 찾아가는 과정
         for (int i = 0; i < array_size; i++)
         {
             cJSON* func_def = cJSON_GetArrayItem(ext, i);
@@ -236,7 +237,7 @@ void parameter_parser(FILE* fs)
             cJSON* args = cJSON_GetObjectItem(type, "args");
             cJSON* param_list = cJSON_GetObjectItem(args, "params");
 
-            // Parameter 정보를 담은 노드(배열)를 찾으면 다시 순회하며 이름과 타입을 담은 노드를 찾아냄
+            // Parameter 정보를 담은 배열 내부를 순회하며 이름과 타입을 담은 노드를 찾아냄
             if (cJSON_IsArray(param_list))
             {
                 int param_size = cJSON_GetArraySize(param_list);
@@ -248,6 +249,7 @@ void parameter_parser(FILE* fs)
                     cJSON* param_nodetype = cJSON_GetObjectItem(param_type, "_nodetype");
                     cJSON* param_type_type = cJSON_GetObjectItem(param_type, "type");
 
+		    // _nodetype이 PtrDecl인지 TypeDecl인지에 따라 포인터 변수 여부 구분(json 구조 차이 존재)
                     if (strcmp(param_nodetype->valuestring, "PtrDecl") == 0)
                     {
                         cJSON* param_type_type_declname = cJSON_GetObjectItem(param_type_type, "declname");
@@ -273,6 +275,7 @@ void parameter_parser(FILE* fs)
                         cJSON* param_nodetype_type_names = cJSON_GetObjectItem(param_nodetype_type, "names");
                         int name_size = cJSON_GetArraySize(param_nodetype_type_names);
                         printf("  parameter type : ");
+			// long int와 같은 두자리 이상 데이터 타입을 모두 출력하기 위해 배열 순회
                         for (int i = 0; i < name_size; i++)
                         {
                             cJSON* name_arr = cJSON_GetArrayItem(param_nodetype_type_names, i);
