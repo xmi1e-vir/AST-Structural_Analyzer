@@ -12,7 +12,7 @@ char buffer[MAX_LEN];
 void parameter_parser(FILE* fs);
 
 int main() {
-    FILE* fs = fopen("E:\\backup\\C\\WhiteHatSchool\\task\\programming\\AST\\binary_tree.json", "r");
+    FILE* fs = fopen("FILE_PATH.json", "r");
 
     // 파일이 정상적으로 열렸는지 확인
     if (fs == NULL) {
