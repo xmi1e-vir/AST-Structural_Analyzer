@@ -17,7 +17,7 @@ int main() {
     // 파일이 정상적으로 열렸는지 확인
     if (fs == NULL) {
         printf("Cannot open file.\n");
-        return 1;
+        return 1; // 비정상 종료
     }
 
     parameter_parser(fs);
@@ -69,6 +69,7 @@ void parameter_parser(FILE* fs) {
                     cJSON* param_nodetype = cJSON_GetObjectItem(param_type, "_nodetype");
                     cJSON* param_type_type = cJSON_GetObjectItem(param_type, "type");
 
+                    // _nodetype이 PtrDecl인지 TypeDecl인지에 따라 포인터 변수 여부 구분(json 구조 차이 존재)
                     if (strcmp(param_nodetype->valuestring, "PtrDecl") == 0) {
                         cJSON* param_type_type_declname = cJSON_GetObjectItem(param_type_type, "declname");
                         const char* name_str = param_type_type_declname->valuestring;
@@ -91,6 +92,7 @@ void parameter_parser(FILE* fs) {
                         cJSON* param_nodetype_type_names = cJSON_GetObjectItem(param_nodetype_type, "names");
                         int name_size = cJSON_GetArraySize(param_nodetype_type_names);
                         printf("  parameter type : ");
+                        // long int와 같은 두자리 이상 데이터 타입을 모두 출력하기 위해 배열 순회회
                         for (int i = 0; i < name_size; i++) {
                             cJSON* name_arr = cJSON_GetArrayItem(param_nodetype_type_names, i);
                             const char* type_str = name_arr->valuestring;
