@@ -106,6 +106,6 @@ void parameter_parser(FILE* fs) {
 
         }
     }
-    // 해제제
+    // 해제
     cJSON_Delete(root);
 }
