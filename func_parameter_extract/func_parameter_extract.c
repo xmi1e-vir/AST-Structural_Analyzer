@@ -1,5 +1,5 @@
 #define _CRT_SECURE_NO_WARNINGS 
-// vs에서 작업하여 scanf 문제를 해결하기 위한 문구
+// vs에서 작업하여 fopen 문제를 해결하기 위한 문구
 
 #include <stdio.h>
 #include <stdlib.h>
