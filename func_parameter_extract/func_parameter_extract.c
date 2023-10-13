@@ -105,7 +105,6 @@ void parameter_parser(FILE* fs) {
                     printf("\n");
                 }
             }
-
         }
     }
     // 해제
