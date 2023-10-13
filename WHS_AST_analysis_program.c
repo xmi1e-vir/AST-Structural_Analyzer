@@ -237,7 +237,7 @@ void parameter_parser(FILE* fs)
             cJSON* args = cJSON_GetObjectItem(type, "args");
             cJSON* param_list = cJSON_GetObjectItem(args, "params");
 
-            // Parameter 정보를 담은 배열 내부를 순회하며 이름과 타입을 담은 노드를 찾아냄
+            // Parameter 정보를 담은 배열 내부를 순회하며 이름과 타입을 담은 객체를 찾아냄
             if (cJSON_IsArray(param_list))
             {
                 int param_size = cJSON_GetArraySize(param_list);
