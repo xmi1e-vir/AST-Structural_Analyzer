@@ -28,6 +28,7 @@ int main() {
 }
 
 void parameter_parser(FILE* fs) {
+    // 파일을 읽어오는 과정
     fseek(fs, 0, SEEK_END);
     int size = ftell(fs);
     fseek(fs, 0, SEEK_SET);
@@ -105,6 +106,6 @@ void parameter_parser(FILE* fs) {
 
         }
     }
-
+    // 해제제
     cJSON_Delete(root);
 }
